@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<!--
+    ========================================================================
+    DYNAMIC MULTIPLICATION TABLE GENERATOR  —  index.html
+    ========================================================================
+    Author      : Luca Azevedo
+    Course      : COMP.4610 GUI Programming I
+    Institution : University of Massachusetts Lowell
+
+    PURPOSE
+    -------
+    Single-page app that lets the user enter a multiplier range (horizontal)
+    and a multiplicand range (vertical), then generates a multiplication
+    table. Each generated table opens in its own closable jQuery UI tab so
+    several tables can be compared side by side.
+
+    LIBRARY STACK (all loaded from CDNs in <head>)
+    ----------------------------------------------
+      • jQuery 3.6.0            — DOM + event plumbing, required by the rest
+      • jQuery UI 1.13.2        — provides the Tabs and Slider widgets
+      • jQuery Validation 1.19.5— declarative form-field validation
+
+    LOAD ORDER MATTERS: jQuery must come first because both jQuery UI and
+    jQuery Validation are plugins that attach themselves onto the jQuery
+    object ($). script.js is loaded LAST (end of <body>) so the DOM and all
+    three libraries already exist when it runs.
+    ========================================================================
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Responsive baseline so the layout adapts on phones/tablets -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Multiplication Table Generator</title>
+
+    <!-- jQuery UI's default "smoothness" theme. This styles the tab and
+         slider widgets out of the box; style.css then overrides parts of it. -->
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/smoothness/jquery-ui.css">
+    <!-- Our own styles. Loaded AFTER the jQuery UI theme so our rules win. -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- 1) jQuery core — every other script below depends on it. -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- 2) jQuery UI — adds .tabs() and .slider() to the jQuery object. -->
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <!-- 3) jQuery Validation — adds .validate() to the jQuery object.
+            NOTE: the correct jsDelivr path is npm/<package>@<version>/<file>.
+            An earlier malformed URL (cdn.jsdelivr.net/jquery.validation/...)
+            404'd, which left .validate() undefined and silently broke the
+            whole app. Keep this exact URL. -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
+</head>
+<body>
+    <!-- .app-container caps the overall width and centres the page -->
+    <div class="app-container">
+
+        <!-- Page title / instructions -->
+        <header>
+            <h1>Dynamic Multiplication Table</h1>
+            <p>Enter a range between -50 and 50 to generate custom dynamic tables.</p>
+        </header>
+
+        <!-- Two-column grid: left = controls, right = tabbed table area.
+             The grid is defined in style.css (.main-content) and collapses
+             to a single column on narrow screens. -->
+        <main class="main-content">
+
+            <!-- ============================================================
+                 LEFT COLUMN — input controls
+                 ============================================================ -->
+            <section class="form-section">
+
+                <!-- novalidate disables the browser's own HTML5 validation
+                     bubbles so jQuery Validation is the single source of
+                     truth for error messages and styling. -->
+                <form id="table-form" novalidate>
+
+                    <!-- ---- Multiplier range: the table's COLUMN headers ---- -->
+                    <div class="form-group-title">Multiplier Range (Horizontal)</div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="min-multiplier">Start Value:</label>
+                            <!-- name attributes must match the keys used in
+                                 the validate() rules object in script.js. -->
+                            <input type="number" id="min-multiplier" name="min-multiplier" value="1" required>
+                            <!-- Empty <div> that jQuery UI turns into a slider.
+                                 script.js two-way-binds it to the input above. -->
+                            <div id="slider-min-multiplier" class="input-slider"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="max-multiplier">End Value:</label>
+                            <input type="number" id="max-multiplier" name="max-multiplier" value="5" required>
+                            <div id="slider-max-multiplier" class="input-slider"></div>
+                        </div>
+                    </div>
+
+                    <!-- ---- Multiplicand range: the table's ROW headers ---- -->
+                    <div class="form-group-title">Multiplicand Range (Vertical)</div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="min-multiplicand">Start Value:</label>
+                            <input type="number" id="min-multiplicand" name="min-multiplicand" value="5" required>
+                            <div id="slider-min-multiplicand" class="input-slider"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="max-multiplicand">End Value:</label>
+                            <input type="number" id="max-multiplicand" name="max-multiplicand" value="8" required>
+                            <div id="slider-max-multiplicand" class="input-slider"></div>
+                        </div>
+                    </div>
+
+                    <!-- type="button" (NOT submit) so the form never reloads
+                         the page. script.js binds the click handler that
+                         validates and builds the table. -->
+                    <button type="button" id="submit-btn">Generate Table Tab</button>
+                </form>
+
+                <!-- Bulk action separated from the form -->
+                <div class="tab-management-tools">
+                    <div class="form-group-title">Tab Workspace Management</div>
+                    <button type="button" id="delete-all-tabs-btn" class="danger-btn">Delete All Generated Tabs</button>
+                </div>
+            </section>
+
+            <!-- ============================================================
+                 RIGHT COLUMN — tabbed workspace
+                 ============================================================ -->
+            <section class="table-section">
+
+                <!-- #tabs is the jQuery UI Tabs root. Its required structure:
+                       <ul> of <li><a href="#panelId"> tab buttons
+                       followed by one <div id="panelId"> per tab panel.
+                     script.js calls $("#tabs").tabs() to activate it and
+                     appends new <li>/<div> pairs for each generated table. -->
+                <div id="tabs">
+                    <ul>
+                        <!-- The one permanent, non-closable tab. -->
+                        <li><a href="#tab-default-placeholder">Workspace Dashboard</a></li>
+                    </ul>
+                    <!-- Matching panel for the permanent tab. -->
+                    <div id="tab-default-placeholder">
+                        <div class="placeholder-text">
+                            Use the parameters on the left control deck to compile dynamic table matrices into independent workspaces.
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Our application logic. Loaded last so the DOM and all libraries
+         are guaranteed to be ready before it executes. -->
+    <script src="js/script.js"></script>
+</body>
+</html>

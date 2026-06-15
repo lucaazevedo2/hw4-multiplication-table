@@ -1,0 +1,359 @@
+/*
+    ========================================================================
+    DYNAMIC MULTIPLICATION TABLE GENERATOR  —  style.css
+    ========================================================================
+    Author      : Luca Azevedo
+    Course      : COMP.4610 GUI Programming I
+    Institution : University of Massachusetts Lowell
+
+    SECTION MAP
+    -----------
+      1. Design tokens (color palettes)
+      2. Global reset + base body (fonts and styles)
+      3. Layout shell (.app-container, header, .main-content grid)
+      4. Form controls (sections, inputs, buttons)
+      5. Table area (wrapper, scrolling, sticky headers, zebra striping)
+      6. jQuery UI overrides (validation labels, sliders, tabs)
+    ========================================================================
+*/
+
+/* ---- 1. Design tokens ------------------------------------------------
+   Central palette as CSS custom properties. Change a colour here once and
+   it updates everywhere it's referenced via var(...). */
+:root {
+    --primary-color: #2c3e50; /* dark slate — headings, origin cell */
+    --accent-color: #3498db;  /* blue — buttons, focus, slider handle */
+    --bg-color: #f8f9fa;      /* page background */
+    --card-bg: #ffffff;       /* form/table card background */
+    --error-color: #e74c3c;   /* red — validation errors, danger button */
+    --border-color: #dcdde1;  /* light grey borders */
+    --header-bg: #34495e;     /* table header background */
+}
+
+/* ---- 2. Global reset + base ------------------------------------------
+   border-box makes width include padding/border so sizing is predictable;
+   zeroing margin/padding removes inconsistent browser defaults. */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-color);
+    color: #333;
+    line-height: 1.6;
+    padding: 20px;
+}
+
+/* ---- 3. Layout shell -------------------------------------------------- */
+
+/* Caps width and horizontally centres the app (margin: 0 auto). */
+.app-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    box-sizing: border-box;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+header h1 {
+    color: var(--primary-color);
+    margin-bottom: 5px;
+}
+
+/* Two-column grid: a fixed 320px control panel on the left and a flexible
+   (1fr) table area on the right. align-items:start keeps both columns
+   pinned to the top instead of stretching to equal height.
+   min-width:0 lets the right column shrink so its inner table can scroll
+   instead of forcing the whole grid wider. */
+.main-content {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 25px;
+    align-items: start;
+    width: 100%;
+    min-width: 0;
+}
+
+/* On narrow screens, collapse to a single stacked column. */
+@media (max-width: 850px) {
+    .main-content {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ---- 4. Form controls ------------------------------------------------- */
+
+/* Card styling shared by the form panel. */
+.form-section {
+    background: var(--card-bg);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    border: 1px solid var(--border-color);
+}
+
+/* Small bold sub-heading that separates groups of fields. */
+.form-group-title {
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-top: 15px;
+    margin-bottom: 12px;
+    font-size: 0.95rem;
+    border-bottom: 2px solid var(--bg-color);
+    padding-bottom: 3px;
+}
+
+/* Puts the Start/End fields side by side in two equal columns. */
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.form-group {
+    margin-bottom: 18px;
+}
+
+.form-group label {
+    display: block;          /* label on its own line above the input */
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+    color: #555;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+/* Highlight the active field with the accent colour instead of the
+   default browser outline. */
+.form-group input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+}
+
+/* Base button look (full-width accent button). */
+button {
+    width: 100%;
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 12px;
+    font-size: 1rem;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 15px;
+    transition: background 0.2s; /* smooth hover colour change */
+}
+
+button:hover {
+    background-color: #2980b9;
+}
+
+/* Red variant for the destructive "Delete All" action. */
+.danger-btn {
+    background-color: var(--error-color);
+    margin-top: 10px;
+}
+.danger-btn:hover {
+    background-color: #c0392b;
+}
+
+/* ---- 5. Table area ---------------------------------------------------- */
+
+/* Card around the tabbed workspace. min-height keeps the panel from
+   collapsing when empty; min-width:0 (again) permits inner scrolling. */
+.table-section {
+    background: var(--card-bg);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    border: 1px solid var(--border-color);
+    min-height: 400px;
+    min-width: 0;
+}
+
+/* Scroll container for a generated table. overflow on both axes means a
+   table larger than the box scrolls internally rather than blowing out
+   the page layout. position:relative anchors the sticky headers below. */
+.table-wrapper {
+    width: 100%;
+    max-height: 500px;
+    overflow-x: auto;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    position: relative;
+    background: white;
+}
+
+/* Greyed message shown in the default dashboard tab. */
+.placeholder-text {
+    text-align: center;
+    color: #888;
+    padding: 80px 20px;
+    font-style: italic;
+}
+
+/* border-collapse:separate + border-spacing:0 keeps each cell's own
+   borders, which is required for sticky headers to render their borders
+   correctly. width:max-content lets the table be as wide as its content
+   so the wrapper scrolls horizontally. */
+table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: max-content;
+    text-align: center;
+}
+
+th, td {
+    padding: 12px 18px;
+    border-right: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+    min-width: 75px;
+    white-space: nowrap; /* never wrap numbers onto two lines */
+}
+
+/* Column headers stick to the TOP while scrolling vertically. */
+th.top-header {
+    background-color: var(--header-bg);
+    color: white;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+/* Row headers stick to the LEFT while scrolling horizontally. */
+th.left-header {
+    background-color: var(--header-bg);
+    color: white;
+    position: sticky;
+    left: 0;
+    z-index: 2;
+}
+
+/* The top-left corner sticks to BOTH edges. Higher z-index (3) keeps it
+   above the top/left headers (z-index 2) where they overlap. */
+th.origin-cell {
+    background-color: var(--primary-color);
+    position: sticky;
+    top: 0;
+    left: 0;
+    z-index: 3;
+}
+
+/* Zebra striping for readability; hover highlights the whole row.
+   !important on hover overrides the nth-child background colours. */
+tbody tr:nth-child(even) td { background-color: #fcfcfc; }
+tbody tr:nth-child(odd)  td { background-color: #ffffff; }
+tbody tr:hover td { background-color: #f1f2f6 !important; }
+
+/* ========================================================================
+    6. jQuery UI overrides
+       These restyle widgets that jQuery UI generates at runtime so they
+       match the rest of the app instead of the default "smoothness" theme.
+   ======================================================================== */
+
+/* Validation error labels (class added in script.js errorPlacement). */
+label.jquery-validation-error {
+    display: block;
+    color: var(--error-color);
+    font-size: 0.75rem;
+    font-weight: bold;
+    margin-top: 4px;
+}
+
+/* ---- Slider track ----
+   position:relative is required because jQuery UI positions the draggable
+   handle absolutely INSIDE this track element. */
+.input-slider {
+    margin-top: 10px;
+    margin-bottom: 5px;
+    height: 6px;
+    border-radius: 4px;
+    background: #e0e0e0;
+    border: none;
+    position: relative;
+}
+
+/* ---- Slider handle (the .ui-slider-handle is created by jQuery UI) ---- */
+.input-slider .ui-slider-handle {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    border: 2px solid #1f618d;
+    top: -6px;        /* vertically centre an 18px handle on a 6px track: (18-6)/2 */
+    margin-left: -9px;/* horizontally centre the handle on the value point: 18/2 */
+    cursor: pointer;
+    outline: none;
+    position: absolute; /* stated explicitly so the override holds cross-browser */
+}
+.input-slider .ui-slider-handle:hover {
+    background: var(--primary-color);
+}
+
+/* ---- Tabs ----
+   Reskin the jQuery UI Tabs widget to match the app's palette. */
+#tabs {
+    border: none;
+    background: transparent;
+    padding: 0;
+}
+
+/* The tab strip (the <ul> jQuery UI styles as .ui-tabs-nav). */
+#tabs .ui-tabs-nav {
+    background: var(--primary-color);
+    padding: 5px 5px 0 5px;
+    border-radius: 6px 6px 0 0;
+    border: none;
+}
+
+/* Individual inactive tab buttons. */
+#tabs .ui-tabs-nav li {
+    border: none;
+    background: #34495e;
+    margin-right: 4px;
+    border-radius: 4px 4px 0 0;
+}
+
+#tabs .ui-tabs-nav li a {
+    color: #bdc3c7;
+    font-weight: 600;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    text-decoration: none;
+}
+
+/* The currently selected tab: light background to look "lifted". */
+#tabs .ui-tabs-nav li.ui-tabs-active {
+    background: var(--bg-color);
+}
+
+#tabs .ui-tabs-nav li.ui-tabs-active a {
+    color: var(--primary-color);
+}
+
+/* The panel area below the tab strip. */
+#tabs .ui-tabs-panel {
+    padding: 15px 0 0 0;
+    background: transparent;
+}
+
+/* Floats the per-tab close (x) icon to the right edge of its tab button. */
+.tab-close-x {
+    float: right;
+    margin: 8px 4px 0 0;
+}
